@@ -18,6 +18,7 @@ import MyComplaints from "./pages/user/MyComplaints";
 
 import AgentDashboard from "./pages/agent/AgentDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import UserManagement from "./pages/admin/UserManagement";
 
 const queryClient = new QueryClient();
 
@@ -46,7 +47,7 @@ const App = () => (
               {/* Admin routes */}
               <Route path="/admin/dashboard" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/complaints" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
-              <Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><UserManagement /></ProtectedRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
