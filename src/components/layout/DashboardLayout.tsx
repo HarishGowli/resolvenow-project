@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import {
   LayoutDashboard, FileText, PlusCircle, Users,
-  LogOut, Menu, X, Bell, ChevronDown, Shield, ClipboardList,
+  LogOut, Menu, X, Bell, ChevronDown, Shield, ClipboardList, Settings,
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -178,6 +178,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   Role: {user.role.toUpperCase()}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Profile Settings
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout

@@ -11,6 +11,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
+import ProfileSettings from "./pages/ProfileSettings";
 
 import UserDashboard from "./pages/user/UserDashboard";
 import SubmitComplaint from "./pages/user/SubmitComplaint";
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/user/dashboard" element={<ProtectedRoute roles={['user']}><UserDashboard /></ProtectedRoute>} />
               <Route path="/user/complaints/new" element={<ProtectedRoute roles={['user']}><SubmitComplaint /></ProtectedRoute>} />
               <Route path="/user/complaints" element={<ProtectedRoute roles={['user']}><MyComplaints /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute roles={['user','agent','admin']}><ProfileSettings /></ProtectedRoute>} />
 
               {/* Agent routes */}
               <Route path="/agent/dashboard" element={<ProtectedRoute roles={['agent']}><AgentDashboard /></ProtectedRoute>} />
