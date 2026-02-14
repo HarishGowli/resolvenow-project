@@ -1,4 +1,4 @@
-import { Complaint, AppNotification } from '@/types';
+import { Complaint, AppNotification, ChatMessage } from '@/types';
 
 export const initialComplaints: Complaint[] = [
   {
@@ -143,5 +143,53 @@ export const initialNotifications: AppNotification[] = [
     read: false,
     createdAt: '2025-02-04T10:00:00Z',
     type: 'assignment',
+  },
+];
+
+export const initialMessages: ChatMessage[] = [
+  {
+    id: 'm1',
+    complaintId: 'c1',
+    senderId: '1',
+    senderName: 'John User',
+    senderRole: 'user',
+    message: 'Hi, I received the laptop with a cracked screen. Can you help?',
+    createdAt: '2025-01-16T14:10:00Z',
+  },
+  {
+    id: 'm2',
+    complaintId: 'c1',
+    senderId: '2',
+    senderName: 'Sarah Agent',
+    senderRole: 'agent',
+    message: 'Hello John, I\'m sorry to hear that. I\'ll arrange a replacement for you. Could you share a photo of the damage?',
+    createdAt: '2025-01-16T14:15:00Z',
+  },
+  {
+    id: 'm3',
+    complaintId: 'c1',
+    senderId: '1',
+    senderName: 'John User',
+    senderRole: 'user',
+    message: 'Sure, I\'ll upload it shortly. How long will the replacement take?',
+    createdAt: '2025-01-16T14:20:00Z',
+  },
+  {
+    id: 'm4',
+    complaintId: 'c3',
+    senderId: '2',
+    senderName: 'Sarah Agent',
+    senderRole: 'agent',
+    message: 'I can see the duplicate charge on your account. I\'ve initiated a refund for the extra amount.',
+    createdAt: '2025-01-22T10:00:00Z',
+  },
+  {
+    id: 'm5',
+    complaintId: 'c3',
+    senderId: '1',
+    senderName: 'John User',
+    senderRole: 'user',
+    message: 'Thank you! How long until it reflects in my account?',
+    createdAt: '2025-01-22T10:05:00Z',
   },
 ];
