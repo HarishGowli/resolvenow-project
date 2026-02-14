@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import StatCard from '@/components/StatCard';
@@ -15,6 +16,7 @@ const CHART_COLORS = {
 
 export default function AdminDashboard() {
   const { complaints } = useData();
+  const navigate = useNavigate();
 
   const statusCounts = {
     pending: complaints.filter(c => c.status === 'pending').length,
@@ -105,7 +107,7 @@ export default function AdminDashboard() {
             </TableHeader>
             <TableBody>
               {complaints.map(c => (
-                <TableRow key={c.id}>
+                <TableRow key={c.id} className="cursor-pointer hover:bg-secondary/50" onClick={() => navigate(`/complaints/${c.id}`)}>
                   <TableCell className="font-medium">{c.title}</TableCell>
                   <TableCell className="text-muted-foreground">{c.userName}</TableCell>
                   <TableCell className="text-muted-foreground">{c.agentName || '—'}</TableCell>

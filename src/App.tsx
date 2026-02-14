@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import ProfileSettings from "./pages/ProfileSettings";
+import ComplaintDetail from "./pages/ComplaintDetail";
 
 import UserDashboard from "./pages/user/UserDashboard";
 import SubmitComplaint from "./pages/user/SubmitComplaint";
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/user/complaints/new" element={<ProtectedRoute roles={['user']}><SubmitComplaint /></ProtectedRoute>} />
               <Route path="/user/complaints" element={<ProtectedRoute roles={['user']}><MyComplaints /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute roles={['user','agent','admin']}><ProfileSettings /></ProtectedRoute>} />
+              <Route path="/complaints/:id" element={<ProtectedRoute roles={['user','agent','admin']}><ComplaintDetail /></ProtectedRoute>} />
 
               {/* Agent routes */}
               <Route path="/agent/dashboard" element={<ProtectedRoute roles={['agent']}><AgentDashboard /></ProtectedRoute>} />

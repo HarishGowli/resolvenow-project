@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -12,6 +13,7 @@ import { Search } from 'lucide-react';
 export default function MyComplaints() {
   const { user } = useAuth();
   const { getComplaintsByUser } = useData();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
@@ -59,7 +61,7 @@ export default function MyComplaints() {
             </TableHeader>
             <TableBody>
               {complaints.map(c => (
-                <TableRow key={c.id}>
+                <TableRow key={c.id} className="cursor-pointer hover:bg-secondary/50" onClick={() => navigate(`/complaints/${c.id}`)}>
                   <TableCell className="font-medium">{c.title}</TableCell>
                   <TableCell className="text-muted-foreground">{c.category}</TableCell>
                   <TableCell><StatusBadge status={c.status} /></TableCell>

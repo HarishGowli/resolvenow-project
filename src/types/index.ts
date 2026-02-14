@@ -36,3 +36,13 @@ export interface AppNotification {
   createdAt: string;
   type: 'status_update' | 'assignment' | 'message' | 'resolution';
 }
+
+export interface ChatMessage {
+  id: string;
+  complaintId: string;
+  senderId: string;
+  senderName: string;
+  senderRole: UserRole;
+  message: string;
+  createdAt: string;
+}

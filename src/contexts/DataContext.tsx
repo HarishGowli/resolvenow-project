@@ -1,10 +1,11 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Complaint, AppNotification, ComplaintStatus } from '@/types';
-import { initialComplaints, initialNotifications } from '@/data/mockData';
+import { Complaint, AppNotification, ComplaintStatus, ChatMessage } from '@/types';
+import { initialComplaints, initialNotifications, initialMessages } from '@/data/mockData';
 
 interface DataContextType {
   complaints: Complaint[];
   notifications: AppNotification[];
+  messages: ChatMessage[];
   addComplaint: (complaint: Omit<Complaint, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => void;
   updateComplaintStatus: (id: string, status: ComplaintStatus) => void;
   getComplaintsByUser: (userId: string) => Complaint[];
@@ -12,6 +13,8 @@ interface DataContextType {
   getUnreadNotifications: (userId: string) => AppNotification[];
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: (userId: string) => void;
+  getMessagesByComplaint: (complaintId: string) => ChatMessage[];
+  sendMessage: (msg: Omit<ChatMessage, 'id' | 'createdAt'>) => void;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -27,6 +30,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return saved ? JSON.parse(saved) : initialNotifications;
   });
 
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    const saved = localStorage.getItem('messages_data');
+    return saved ? JSON.parse(saved) : initialMessages;
+  });
+
   useEffect(() => {
     localStorage.setItem('complaints_data', JSON.stringify(complaints));
   }, [complaints]);
@@ -34,6 +42,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem('notifications_data', JSON.stringify(notifications));
   }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem('messages_data', JSON.stringify(messages));
+  }, [messages]);
 
   const addComplaint = (data: Omit<Complaint, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
     const newComplaint: Complaint = {
@@ -66,11 +78,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setNotifications(prev => prev.map(n => n.userId === userId ? { ...n, read: true } : n));
   };
 
+  const getMessagesByComplaint = (complaintId: string) =>
+    messages.filter(m => m.complaintId === complaintId).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+  const sendMessage = (msg: Omit<ChatMessage, 'id' | 'createdAt'>) => {
+    const newMsg: ChatMessage = {
+      ...msg,
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, newMsg]);
+  };
+
   return (
     <DataContext.Provider value={{
-      complaints, notifications, addComplaint, updateComplaintStatus,
+      complaints, notifications, messages, addComplaint, updateComplaintStatus,
       getComplaintsByUser, getComplaintsByAgent, getUnreadNotifications,
-      markNotificationRead, markAllNotificationsRead,
+      markNotificationRead, markAllNotificationsRead, getMessagesByComplaint, sendMessage,
     }}>
       {children}
     </DataContext.Provider>
