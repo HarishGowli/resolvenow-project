@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { User, Mail, Shield, Calendar, Camera, Save, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ProfileSettings() {
   const { user } = useAuth();
@@ -15,30 +16,30 @@ export default function ProfileSettings() {
 
   const [name, setName] = useState(user?.name || '');
   const [avatarInitial, setAvatarInitial] = useState(user?.name?.charAt(0) || '');
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
   if (!user) return null;
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (!name.trim()) {
       toast({ title: 'Error', description: 'Name cannot be empty.', variant: 'destructive' });
       return;
     }
-    // Update in localStorage
-    const saved = localStorage.getItem('auth_user');
-    if (saved) {
-      const userData = JSON.parse(saved);
-      userData.name = name;
-      localStorage.setItem('auth_user', JSON.stringify(userData));
+    const { error } = await supabase
+      .from('profiles')
+      .update({ name })
+      .eq('user_id', user.id);
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to update profile.', variant: 'destructive' });
+    } else {
+      setAvatarInitial(name.charAt(0));
+      toast({ title: 'Profile updated', description: 'Your name has been saved successfully.' });
     }
-    setAvatarInitial(name.charAt(0));
-    toast({ title: 'Profile updated', description: 'Your name has been saved successfully.' });
   };
 
-  const handleChangePassword = () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
       toast({ title: 'Error', description: 'Please fill all password fields.', variant: 'destructive' });
       return;
     }
@@ -50,10 +51,14 @@ export default function ProfileSettings() {
       toast({ title: 'Error', description: 'New passwords do not match.', variant: 'destructive' });
       return;
     }
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    toast({ title: 'Password updated', description: 'Your password has been changed successfully.' });
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      setNewPassword('');
+      setConfirmPassword('');
+      toast({ title: 'Password updated', description: 'Your password has been changed successfully.' });
+    }
   };
 
   const roleBadgeClass: Record<string, string> = {
@@ -94,7 +99,6 @@ export default function ProfileSettings() {
             <User className="h-4 w-4" /> Personal Information
           </h3>
           <Separator />
-
           <div className="grid gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -125,7 +129,6 @@ export default function ProfileSettings() {
               </div>
             </div>
           </div>
-
           <div className="flex justify-end">
             <Button onClick={handleSaveProfile} className="gap-2">
               <Save className="h-4 w-4" /> Save Changes
@@ -139,12 +142,7 @@ export default function ProfileSettings() {
             <Lock className="h-4 w-4" /> Change Password
           </h3>
           <Separator />
-
           <div className="grid gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="current-pw">Current Password</Label>
-              <Input id="current-pw" type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
-            </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="new-pw">New Password</Label>
@@ -156,7 +154,6 @@ export default function ProfileSettings() {
               </div>
             </div>
           </div>
-
           <div className="flex justify-end">
             <Button variant="outline" onClick={handleChangePassword} className="gap-2">
               <Lock className="h-4 w-4" /> Update Password

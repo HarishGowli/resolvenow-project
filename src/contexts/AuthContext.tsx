@@ -1,81 +1,92 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import type { Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string, role: UserRole) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-interface StoredUser {
-  id: string;
-  name: string;
-  email: string;
-  password: string;
-  role: UserRole;
-  createdAt: string;
-}
-
-const DEMO_USERS: StoredUser[] = [
-  { id: '1', name: 'John User', email: 'user@demo.com', password: 'password123', role: 'user', createdAt: '2024-01-15' },
-  { id: '2', name: 'Sarah Agent', email: 'agent@demo.com', password: 'password123', role: 'agent', createdAt: '2024-01-10' },
-  { id: '3', name: 'Mike Admin', email: 'admin@demo.com', password: 'password123', role: 'admin', createdAt: '2024-01-01' },
-];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('auth_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) localStorage.setItem('auth_user', JSON.stringify(user));
-    else localStorage.removeItem('auth_user');
-  }, [user]);
+  const fetchUserData = async (userId: string): Promise<User | null> => {
+    const [profileRes, roleRes] = await Promise.all([
+      supabase.from('profiles').select('*').eq('user_id', userId).single(),
+      supabase.from('user_roles').select('role').eq('user_id', userId).single(),
+    ]);
 
-  const getUsers = (): StoredUser[] => {
-    const saved = localStorage.getItem('registered_users');
-    return saved ? [...DEMO_USERS, ...JSON.parse(saved)] : DEMO_USERS;
+    if (profileRes.error || roleRes.error) return null;
+
+    return {
+      id: userId,
+      name: profileRes.data.name,
+      email: profileRes.data.email,
+      role: roleRes.data.role as UserRole,
+      createdAt: profileRes.data.created_at,
+    };
   };
 
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          // Use setTimeout to avoid Supabase client deadlock
+          setTimeout(async () => {
+            const userData = await fetchUserData(session.user.id);
+            setUser(userData);
+            setLoading(false);
+          }, 0);
+        } else {
+          setUser(null);
+          setLoading(false);
+        }
+      }
+    );
+
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const userData = await fetchUserData(session.user.id);
+        setUser(userData);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const login = async (email: string, password: string): Promise<boolean> => {
-    const users = getUsers();
-    const found = users.find(u => u.email === email && u.password === password);
-    if (found) {
-      const { password: _, ...userData } = found;
-      setUser(userData);
-      return true;
-    }
-    return false;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return !error;
   };
 
   const register = async (name: string, email: string, password: string, role: UserRole): Promise<boolean> => {
-    const users = getUsers();
-    if (users.find(u => u.email === email)) return false;
-    const newUser: StoredUser = {
-      id: crypto.randomUUID(),
-      name,
+    const { error } = await supabase.auth.signUp({
       email,
       password,
-      role,
-      createdAt: new Date().toISOString(),
-    };
-    const custom = localStorage.getItem('registered_users');
-    const existing: StoredUser[] = custom ? JSON.parse(custom) : [];
-    localStorage.setItem('registered_users', JSON.stringify([...existing, newUser]));
-    const { password: _, ...userData } = newUser;
-    setUser(userData);
-    return true;
+      options: {
+        data: { name, role },
+        emailRedirectTo: window.location.origin,
+      },
+    });
+    return !error;
   };
 
-  const logout = () => setUser(null);
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user, loading }}>
       {children}
     </AuthContext.Provider>
   );

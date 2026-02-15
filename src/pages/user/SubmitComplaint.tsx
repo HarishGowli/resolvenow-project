@@ -22,7 +22,7 @@ export default function SubmitComplaint() {
 
   if (!user) return null;
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const title = (form.get('title') as string).trim();
@@ -34,7 +34,7 @@ export default function SubmitComplaint() {
     }
 
     setLoading(true);
-    addComplaint({
+    await addComplaint({
       title,
       description,
       category,

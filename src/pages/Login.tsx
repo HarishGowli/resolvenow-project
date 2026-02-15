@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Shield } from 'lucide-react';
@@ -12,9 +12,15 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      navigate(`/${user.role}/dashboard`, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +28,9 @@ export default function Login() {
     const success = await login(email, password);
     setLoading(false);
     if (success) {
-      const user = JSON.parse(localStorage.getItem('auth_user')!);
-      navigate(`/${user.role}/dashboard`);
+      // Auth state change will set user, wait briefly then navigate
+      toast({ title: 'Welcome back!', description: 'Logging you in...' });
+      // Navigation will happen after auth state updates
     } else {
       toast({ title: 'Login Failed', description: 'Invalid email or password.', variant: 'destructive' });
     }
@@ -57,14 +64,6 @@ export default function Login() {
             Don't have an account?{' '}
             <Link to="/register" className="text-accent font-medium hover:underline">Register</Link>
           </p>
-          <div className="mt-6 p-3 bg-secondary rounded-lg">
-            <p className="text-xs font-medium text-center mb-2">Demo Credentials (password: password123)</p>
-            <div className="text-xs text-muted-foreground space-y-0.5 text-center">
-              <p>User: user@demo.com</p>
-              <p>Agent: agent@demo.com</p>
-              <p>Admin: admin@demo.com</p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

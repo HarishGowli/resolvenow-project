@@ -67,9 +67,9 @@ export default function ComplaintDetail() {
   const canChat = complaint.agentId && (user.id === complaint.userId || user.id === complaint.agentId || user.role === 'admin');
   const canUpdateStatus = user.role === 'agent' || user.role === 'admin';
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!msgText.trim() || !id) return;
-    sendMessage({
+    await sendMessage({
       complaintId: id,
       senderId: user.id,
       senderName: user.name,
