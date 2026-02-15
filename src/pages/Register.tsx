@@ -30,8 +30,8 @@ export default function Register() {
     const success = await register(name, email, password, role);
     setLoading(false);
     if (success) {
-      toast({ title: 'Account Created', description: 'Welcome to ComplaintHub!' });
-      navigate(`/${role}/dashboard`);
+      toast({ title: 'Account Created', description: 'Please check your email to verify your account before signing in.' });
+      navigate('/login');
     } else {
       toast({ title: 'Registration Failed', description: 'An account with this email already exists.', variant: 'destructive' });
     }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { UserRole } from '@/types';
 import { Search, Trash2, Edit, Users, UserCheck, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ManagedUser {
   id: string;
@@ -17,15 +18,6 @@ interface ManagedUser {
   role: UserRole;
   createdAt: string;
 }
-
-const DEMO_USERS: ManagedUser[] = [
-  { id: '1', name: 'John User', email: 'user@demo.com', role: 'user', createdAt: '2024-01-15' },
-  { id: '2', name: 'Sarah Agent', email: 'agent@demo.com', role: 'agent', createdAt: '2024-01-10' },
-  { id: '3', name: 'Mike Admin', email: 'admin@demo.com', role: 'admin', createdAt: '2024-01-01' },
-  { id: '4', name: 'Alice Johnson', email: 'alice@example.com', role: 'user', createdAt: '2024-02-20' },
-  { id: '5', name: 'Bob Smith', email: 'bob@example.com', role: 'user', createdAt: '2024-03-10' },
-  { id: '6', name: 'Diana Prince', email: 'diana@example.com', role: 'agent', createdAt: '2024-04-05' },
-];
 
 const roleBadgeVariant: Record<UserRole, string> = {
   user: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -40,13 +32,34 @@ const roleIcon: Record<UserRole, typeof Users> = {
 };
 
 export default function UserManagement() {
-  const [users, setUsers] = useState<ManagedUser[]>(DEMO_USERS);
+  const [users, setUsers] = useState<ManagedUser[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [editUser, setEditUser] = useState<ManagedUser | null>(null);
   const [editRole, setEditRole] = useState<UserRole>('user');
   const [deleteUser, setDeleteUser] = useState<ManagedUser | null>(null);
   const { toast } = useToast();
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    const { data: profiles } = await supabase.from('profiles').select('*');
+    const { data: roles } = await supabase.from('user_roles').select('*');
+    
+    if (profiles && roles) {
+      const roleMap = new Map(roles.map(r => [r.user_id, r.role as UserRole]));
+      setUsers(profiles.map(p => ({
+        id: p.user_id,
+        name: p.name,
+        email: p.email,
+        role: roleMap.get(p.user_id) || 'user',
+        createdAt: p.created_at,
+      })));
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchUsers(); }, []);
 
   const filtered = useMemo(() => {
     return users.filter(u => {
@@ -64,17 +77,25 @@ export default function UserManagement() {
     admin: users.filter(u => u.role === 'admin').length,
   }), [users]);
 
-  const handleEditSave = () => {
+  const handleEditSave = async () => {
     if (!editUser) return;
-    setUsers(prev => prev.map(u => u.id === editUser.id ? { ...u, role: editRole } : u));
-    toast({ title: 'Role updated', description: `${editUser.name} is now ${editRole}.` });
+    const { error } = await supabase
+      .from('user_roles')
+      .update({ role: editRole as any })
+      .eq('user_id', editUser.id);
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to update role.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Role updated', description: `${editUser.name} is now ${editRole}.` });
+      await fetchUsers();
+    }
     setEditUser(null);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteUser) return;
-    setUsers(prev => prev.filter(u => u.id !== deleteUser.id));
-    toast({ title: 'User removed', description: `${deleteUser.name} has been deleted.`, variant: 'destructive' });
+    // Note: actual user deletion requires admin API; here we just inform
+    toast({ title: 'Not supported', description: 'User deletion requires backend admin access.', variant: 'destructive' });
     setDeleteUser(null);
   };
 
@@ -107,17 +128,10 @@ export default function UserManagement() {
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name or email..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9"
-            />
+            <Input placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
           </div>
           <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Filter role" />
-            </SelectTrigger>
+            <SelectTrigger className="w-40"><SelectValue placeholder="Filter role" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Roles</SelectItem>
               <SelectItem value="user">Users</SelectItem>
@@ -140,11 +154,13 @@ export default function UserManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    No users found.
-                  </TableCell>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">Loading...</TableCell>
+                </TableRow>
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">No users found.</TableCell>
                 </TableRow>
               ) : (
                 filtered.map(u => {
@@ -164,25 +180,13 @@ export default function UserManagement() {
                           {u.role}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(u.createdAt).toLocaleDateString()}
-                      </TableCell>
+                      <TableCell className="text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => { setEditUser(u); setEditRole(u.role); }}
-                          >
+                          <Button size="sm" variant="ghost" onClick={() => { setEditUser(u); setEditRole(u.role); }}>
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => setDeleteUser(u)}
-                            disabled={u.role === 'admin'}
-                          >
+                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setDeleteUser(u)} disabled={u.role === 'admin'}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -199,15 +203,11 @@ export default function UserManagement() {
       {/* Edit role dialog */}
       <Dialog open={!!editUser} onOpenChange={open => !open && setEditUser(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Role — {editUser?.name}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Edit Role — {editUser?.name}</DialogTitle></DialogHeader>
           <div className="py-4">
             <label className="text-sm font-medium mb-2 block">Assign Role</label>
             <Select value={editRole} onValueChange={v => setEditRole(v as UserRole)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="user">User</SelectItem>
                 <SelectItem value="agent">Agent</SelectItem>
@@ -225,9 +225,7 @@ export default function UserManagement() {
       {/* Delete confirmation dialog */}
       <Dialog open={!!deleteUser} onOpenChange={open => !open && setDeleteUser(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete User</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Delete User</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">
             Are you sure you want to remove <strong>{deleteUser?.name}</strong> ({deleteUser?.email})? This action cannot be undone.
           </p>

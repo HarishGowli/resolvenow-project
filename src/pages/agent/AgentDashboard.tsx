@@ -27,8 +27,8 @@ export default function AgentDashboard() {
     resolved: complaints.filter(c => c.status === 'resolved').length,
   };
 
-  const handleStatusChange = (id: string, status: ComplaintStatus) => {
-    updateComplaintStatus(id, status);
+  const handleStatusChange = async (id: string, status: ComplaintStatus) => {
+    await updateComplaintStatus(id, status);
     toast({ title: 'Status Updated', description: `Complaint status changed to ${status}.` });
   };
 

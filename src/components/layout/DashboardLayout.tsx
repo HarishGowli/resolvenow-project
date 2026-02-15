@@ -41,8 +41,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const unreadNotifs = getUnreadNotifications(user.id);
   const userNotifications = notifications.filter(n => n.userId === user.id).slice(0, 5);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 

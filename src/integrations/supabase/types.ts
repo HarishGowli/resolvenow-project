@@ -14,16 +14,193 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chat_messages: {
+        Row: {
+          complaint_id: string
+          created_at: string
+          id: string
+          message: string
+          sender_id: string
+          sender_name: string
+          sender_role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          complaint_id: string
+          created_at?: string
+          id?: string
+          message: string
+          sender_id: string
+          sender_name: string
+          sender_role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          complaint_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          sender_id?: string
+          sender_name?: string
+          sender_role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      complaints: {
+        Row: {
+          address: string | null
+          agent_id: string | null
+          agent_name: string | null
+          category: string
+          created_at: string
+          description: string
+          id: string
+          priority: Database["public"]["Enums"]["complaint_priority"]
+          product_name: string | null
+          purchase_date: string | null
+          status: Database["public"]["Enums"]["complaint_status"]
+          title: string
+          updated_at: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          address?: string | null
+          agent_id?: string | null
+          agent_name?: string | null
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          priority?: Database["public"]["Enums"]["complaint_priority"]
+          product_name?: string | null
+          purchase_date?: string | null
+          status?: Database["public"]["Enums"]["complaint_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          address?: string | null
+          agent_id?: string | null
+          agent_name?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["complaint_priority"]
+          product_name?: string | null
+          purchase_date?: string | null
+          status?: Database["public"]["Enums"]["complaint_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_complaint_participant: {
+        Args: { _complaint_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "user" | "agent" | "admin"
+      complaint_priority: "low" | "medium" | "high"
+      complaint_status: "pending" | "assigned" | "in-progress" | "resolved"
+      notification_type:
+        | "status_update"
+        | "assignment"
+        | "message"
+        | "resolution"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +327,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["user", "agent", "admin"],
+      complaint_priority: ["low", "medium", "high"],
+      complaint_status: ["pending", "assigned", "in-progress", "resolved"],
+      notification_type: [
+        "status_update",
+        "assignment",
+        "message",
+        "resolution",
+      ],
+    },
   },
 } as const
