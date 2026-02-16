@@ -13,6 +13,7 @@ import {
   ArrowLeft, Send, Clock, CheckCircle2, UserCheck, Loader2,
   AlertTriangle, Calendar, MapPin, Package, Tag,
 } from 'lucide-react';
+import ComplaintAttachments from '@/components/ComplaintAttachments';
 
 const STATUS_STEPS: { status: ComplaintStatus; label: string; icon: typeof Clock }[] = [
   { status: 'pending', label: 'Pending', icon: Clock },
@@ -212,8 +213,11 @@ export default function ComplaintDetail() {
                   <span className="text-muted-foreground">Created:</span>
                   <span className="font-medium">{new Date(complaint.createdAt).toLocaleString()}</span>
                 </div>
-              </div>
             </div>
+
+            {/* Attachments */}
+            <ComplaintAttachments complaintId={complaint.id} />
+          </div>
           </div>
 
           {/* Chat */}

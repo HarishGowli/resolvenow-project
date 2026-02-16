@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
@@ -10,6 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Priority } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { Paperclip, X, FileText, ImageIcon } from 'lucide-react';
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
 export default function SubmitComplaint() {
   const { user } = useAuth();
@@ -19,8 +24,56 @@ export default function SubmitComplaint() {
   const [loading, setLoading] = useState(false);
   const [priority, setPriority] = useState<Priority>('medium');
   const [category, setCategory] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
+
+  const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files || []);
+    const valid = selected.filter(f => {
+      if (f.size > MAX_FILE_SIZE) {
+        toast({ title: 'File too large', description: `${f.name} exceeds 10MB limit.`, variant: 'destructive' });
+        return false;
+      }
+      if (!ACCEPTED_TYPES.includes(f.type)) {
+        toast({ title: 'Invalid file type', description: `${f.name} is not supported.`, variant: 'destructive' });
+        return false;
+      }
+      return true;
+    });
+    setFiles(prev => [...prev, ...valid].slice(0, 5));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadFiles = async (complaintId: string) => {
+    for (const file of files) {
+      const ext = file.name.split('.').pop();
+      const filePath = `${user.id}/${complaintId}/${crypto.randomUUID()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('complaint-attachments')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        continue;
+      }
+
+      await supabase.from('complaint_attachments').insert({
+        complaint_id: complaintId,
+        user_id: user.id,
+        file_name: file.name,
+        file_path: filePath,
+        file_size: file.size,
+        content_type: file.type,
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,20 +87,38 @@ export default function SubmitComplaint() {
     }
 
     setLoading(true);
-    await addComplaint({
+
+    // Insert complaint and get its ID
+    const { data: inserted, error } = await supabase.from('complaints').insert({
       title,
       description,
       category,
-      priority,
-      userId: user.id,
-      userName: user.name,
-      address: (form.get('address') as string) || undefined,
-      productName: (form.get('productName') as string) || undefined,
-      purchaseDate: (form.get('purchaseDate') as string) || undefined,
-    });
+      priority: priority as any,
+      user_id: user.id,
+      user_name: user.name,
+      address: (form.get('address') as string) || null,
+      product_name: (form.get('productName') as string) || null,
+      purchase_date: (form.get('purchaseDate') as string) || null,
+    }).select('id').single();
+
+    if (error || !inserted) {
+      toast({ title: 'Error', description: 'Failed to submit complaint.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
+    if (files.length > 0) {
+      await uploadFiles(inserted.id);
+    }
+
     setLoading(false);
     toast({ title: 'Complaint Submitted!', description: 'Your complaint has been registered successfully.' });
     navigate('/user/complaints');
+  };
+
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) return <ImageIcon className="h-4 w-4 text-muted-foreground" />;
+    return <FileText className="h-4 w-4 text-muted-foreground" />;
   };
 
   return (
@@ -110,10 +181,40 @@ export default function SubmitComplaint() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="file">Attachment</Label>
-            <Input id="file" type="file" accept="image/*,.pdf,.doc,.docx" />
-            <p className="text-xs text-muted-foreground">Supported: images, PDF, DOC (max 10MB)</p>
+          {/* File Attachments */}
+          <div className="space-y-3">
+            <Label>Attachments</Label>
+            <div
+              className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground">Click to add files (max 5, 10MB each)</p>
+              <p className="text-xs text-muted-foreground mt-1">Images, PDF, DOC supported</p>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,.pdf,.doc,.docx"
+              className="hidden"
+              onChange={handleFilesChange}
+            />
+
+            {files.length > 0 && (
+              <div className="space-y-2">
+                {files.map((file, i) => (
+                  <div key={i} className="flex items-center gap-2 bg-secondary/50 rounded-lg px-3 py-2 text-sm">
+                    {getFileIcon(file.type)}
+                    <span className="flex-1 truncate">{file.name}</span>
+                    <span className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(0)}KB</span>
+                    <button type="button" onClick={() => removeFile(i)} className="text-muted-foreground hover:text-destructive">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-2">
