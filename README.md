@@ -37,11 +37,12 @@ This project was developed as part of my learning journey in the MERN stack and 
 resolvenow-project
 │
 ├── src
-│ ├── components
-│ ├── pages
-│ ├── assets
-│ ├── App.tsx
-│ └── main.tsx
+│
+├── components
+│├── pages
+│├── assets
+│├── App.tsx
+│└── main.tsx
 │
 ├── public
 ├── package.json
