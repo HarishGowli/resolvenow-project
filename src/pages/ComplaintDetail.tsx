@@ -14,6 +14,7 @@ import {
   AlertTriangle, Calendar, MapPin, Package, Tag,
 } from 'lucide-react';
 import ComplaintAttachments from '@/components/ComplaintAttachments';
+import ComplaintFeedback from '@/components/ComplaintFeedback';
 
 const STATUS_STEPS: { status: ComplaintStatus; label: string; icon: typeof Clock }[] = [
   { status: 'pending', label: 'Pending', icon: Clock },
@@ -217,6 +218,9 @@ export default function ComplaintDetail() {
 
             {/* Attachments */}
             <ComplaintAttachments complaintId={complaint.id} />
+
+            {/* Feedback */}
+            <ComplaintFeedback complaintId={complaint.id} complaintStatus={complaint.status} complaintUserId={complaint.userId} />
           </div>
           </div>
 
