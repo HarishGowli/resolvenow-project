@@ -11,6 +11,7 @@ interface Attachment {
   created_at: string;
 }
 
+
 export default function ComplaintAttachments({ complaintId }: { complaintId: string }) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(true);
