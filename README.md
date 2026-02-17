@@ -98,5 +98,5 @@ Deployment with custom domain
 
 👨‍💻 Author
 
-Harish
+Harish Gowli
 
